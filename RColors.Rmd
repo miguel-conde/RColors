@@ -1,0 +1,187 @@
+---
+title: "Using color in R"
+author: "Miguel Conde"
+date: "24 de mayo de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Basic utilities
+```{r}
+palette()
+```
+
+## Color Palettes
+```{r}
+rainbow(10)
+```
+
+```{r}
+heat.colors(10)
+```
+
+```{r}
+terrain.colors(10, alpha = 1)
+
+```
+
+```{r}
+topo.colors(10, alpha = 1)
+
+```
+
+```{r}
+cm.colors(10, alpha = 1)
+```
+
+## Gray Level Specification
+```{r}
+gray(0:8 / 8)
+```
+
+
+# Key concepts
+
+* Palette
+* Range
+
+# Range Utilities
+
+* `colors()`: lists the names of colors you can use in any plotting function.
+
+Imagine you’re a painter and you have your palette in your hand. On your palette are a set of colors, say red and blue. Now, between red and blue you can a imagine an entire spectrum of colors that can be created by mixing together different amounts of red and blue. Both `colorRamp()` and `colorRampPalette()` handle that “mixing” process for you.
+
+* `grDevices::colorRamp()`: Take a palette of colors and return a function that takes valeurs between 0 and 1, indicating the extremes of the color palette.
+* `grDevices:colorRampPalette()`: Take a palette of colors and return a function that takes integer arguments and returns a vector of colors interpolating the palette.
+
+
+## `grDevices::colorRamp()`
+
+```{r}
+pal <- colorRamp(c("red", "blue"))
+pal(0)
+```
+
+When we call pal(0) we get a 1 by 3 matrix. The numbers in the matrix will range from 0 to 255 and indicate the quantities of red, green, and blue (RGB) in columns 1, 2, and 3 respectively. Simple math tells us there are over 16 million colors that can be expressed in this way. Calling pal(0) gives us the maximum value (255) on red and 0 on the other colors. So this is just the color red. The `rgb()` function can be used to produce any color via red, green, blue proportions and return a hexadecimal representation.
+```{r}
+rgb(pal(0), max = 255)
+```
+```{r}
+col2rgb("red")
+```
+
+
+```{r}
+pal(seq(0, 1, len = 10))
+```
+
+The idea here is that `colorRamp()` gives you a function that allows you to **interpolate** between the two colors red and blue. You do not have to provide just two colors in your initial color palette; you can start with multiple colors and `colorRamp()` will interpolate between all of them.
+
+
+## `grDevices:colorRampPalette()`
+```{r}
+pal <- colorRampPalette(c("red", "yellow"))
+## Just return red and yellow
+pal(2)
+```
+
+The colors are represented as hexadecimal strings. After the # symbol, the first two characters indicate the red amount, the second two the green amount, and the last two the blue amount. Because each position can have 16 possible values (0-9 and A-F), the two positions together allow for 256 possibilities per color.
+
+```{r}
+## Return 10 colors in between red and yellow
+pal(10)
+
+```
+
+
+
+# Palette Utilities: `RColorBrewer` Package
+The [`RColorBrewer`](https://cran.r-project.org/web/packages/RColorBrewer/index.html) package contains interesting and useful color palettes in three "flavours":
+
+* **Sequential**: for numerical data that are ordered
+
+* **Diverging**: for numerical data that can be positive or negative, often representing deviations from some norm or baseline
+
+* **Qualitative**: for qualitative unordered data
+
+All of these palettes can be used in conjunction with the `colorRamp()` and `colorRampPalette()`. 
+
+```{r}
+library(RColorBrewer)
+display.brewer.all()
+```
+```{r}
+display.brewer.all(type="div")
+display.brewer.all(type="seq")
+display.brewer.all(type="qual")
+```
+
+
+The relevant function is `brewer.pal()` which needs two arguments:
+
+* `name`: the name of the color palette you want to use
+
+* `n`: the number of colors you want from the palette (integer)
+
+Let's choose to use 3 colors from the “BuGn” palette, which is a sequential palette.
+```{r}
+display.brewer.pal(30, "BuGn")
+cols <- brewer.pal(3, "BuGn")
+cols
+```
+
+Those three colors make up my initial palette. Then I can pass them to `colorRampPalette()` to create my interpolating function.
+
+```{r}
+pal <- colorRampPalette(cols)
+```
+
+And now i can use `pal` with the usual `col` argument of plotting functions.
+```{r}
+set.seed(19)
+x <- rnorm(30)
+y <- rnorm(30)
+plot(x, y, col = pal(30))
+
+```
+
+
+# Others
+## smoothScatter()
+A function that takes advantage of the color palettes in `RColorBrewer` is the `smoothScatter()` function, which is very useful for making scatterplots of very large datasets. The `smoothScatter()` function essentially gives you a 2-D histogram of the data using a sequential palette (here “Blues”, see ??smoothScatter).
+
+```{r}
+set.seed(1)
+x <- rnorm(10000)
+y <- rnorm(10000)
+smoothScatter(x, y)
+```
+
+
+## Transparency
+
+Color transparency can be added via the alpha parameter to `rgb()` to produce color specifications with varying levels of transparency. When transparency is used  two extra characters are added to the right side of the hexadecimal representation (there will be 8 positions instead of 6).
+
+For example, if we wanted the color red with a high level of transparency, we could specify:
+```{r}
+rgb(1, 0, 0, 0.1)
+```
+
+Transparency can be useful when you have plots with a high density of points or lines. For example, the scatterplot below has a lot of overplotted points and it’s difficult to see what’s happening in the middle of the plot region.
+
+```{r}
+set.seed(2)
+x <- rnorm(2000)
+y <- rnorm(2000)
+plot(x, y, pch = 19)
+```
+
+If we add some transparency to the black circles, we can get a better sense of the varying density of the points in the plot.
+
+```{r}
+plot(x, y, pch = 19, col = rgb(0, 0, 0, 0.15))
+```
+
